@@ -1,11 +1,8 @@
 # finance-BackEnd
 
 
-Projeto em Nestjs para controle financeiro com cadastro de usuarios, contas a pagar e receber.
-
+Projeto em Nestjs para controle e cadastro de usuarios.
 
 Tecnoligias utilizadas.
 Mongoose ODM para integração com MongoDB.
-
-
-
+Autentificação com firebase.

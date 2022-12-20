@@ -1,26 +1,21 @@
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User } from '../models/users.model';
-import { SignupDto } from 'src/users/dto/signup.dto';
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { UserModel } from '../models/users.model';
+import { UserDto } from 'src/users/dto/user.dto';
 
 @Injectable()
 export class UserDBService {
   constructor(
     @InjectModel('User')
-    private readonly usersModel: Model<User>,
+    private readonly usersModel: Model<UserModel>,
   ) {}
 
-  public async created(signupDto: SignupDto): Promise<User> {
-    const user = await this.findByEmail(signupDto.email);
-
+  public async created(data: UserDto): Promise<any> {
+    const user = await this.findByEmail(data.email);
+    console.log(user);
     if (!user) {
-      const userSave = new this.usersModel(signupDto);
+      const userSave = new this.usersModel(data);
 
       return userSave.save();
     } else {
@@ -28,7 +23,7 @@ export class UserDBService {
     }
   }
 
-  public async findAll(): Promise<User[]> {
+  public async findAll(): Promise<UserModel[]> {
     const users = await this.usersModel.find();
 
     if (!users) {
@@ -38,19 +33,19 @@ export class UserDBService {
     }
   }
 
-  public async findID(id: string): Promise<User> {
+  public async findID(id: string): Promise<UserModel> {
     const user = await this.usersModel.findOne({ _id: id });
     if (!user) {
-      throw new UnauthorizedException('User not found.');
+      throw new UnauthorizedException('UserModel not found.');
     }
     return user;
   }
 
-  public async findByEmail(email: string): Promise<User> {
+  public async findByEmail(email: string): Promise<any> {
     const user = await this.usersModel.findOne({ email });
 
     if (!user) {
-      throw new NotFoundException('Email not found');
+      return false;
     } else {
       return user;
     }

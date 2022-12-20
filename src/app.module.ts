@@ -9,13 +9,7 @@ import { FirebaseModule } from './firebase/firebase.module';
 import { DbModule } from './db/db.module';
 
 @Module({
-  imports: [
-    UsersModule,
-    AuthModule,
-    MongooseModule.forRoot(process.env.MONGO_URI),
-    FirebaseModule,
-    DbModule,
-  ],
+  imports: [UsersModule, AuthModule, MongooseModule.forRoot(process.env.MONGO_URI), FirebaseModule, DbModule],
   controllers: [AppController],
   providers: [AppService],
 })

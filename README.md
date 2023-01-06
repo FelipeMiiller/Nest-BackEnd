@@ -1,4 +1,4 @@
-# finance-BackEnd
+# NestJS-BackEnd
 
 
 Projeto em Nestjs para controle e cadastro de usuarios.

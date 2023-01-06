@@ -1,18 +1,15 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
-
 import { PassportModule } from '@nestjs/passport';
-
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
-
-import { DbModule } from 'src/db/db.module';
 import { AuthController } from './auth.controller';
 import { FirebaseModule } from 'src/firebase/firebase.module';
+import { MongooseModule } from 'src/mongoose/mongoose.module';
 @Module({
   imports: [
     PassportModule,
-    DbModule,
+    MongooseModule,
     FirebaseModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET,

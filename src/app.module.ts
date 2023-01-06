@@ -4,12 +4,11 @@ import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 
 import { AuthModule } from './auth/auth.module';
-import { MongooseModule } from '@nestjs/mongoose';
+import { MongooseModule as MongooseNestJS } from '@nestjs/mongoose';
 import { FirebaseModule } from './firebase/firebase.module';
-import { DbModule } from './db/db.module';
-
+import { MongooseModule } from './mongoose/mongoose.module';
 @Module({
-  imports: [UsersModule, AuthModule, MongooseModule.forRoot(process.env.MONGO_URI), FirebaseModule, DbModule],
+  imports: [UsersModule, AuthModule, MongooseNestJS.forRoot(process.env.MONGO_URI), FirebaseModule, MongooseModule],
   controllers: [AppController],
   providers: [AppService],
 })

@@ -1,12 +1,12 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { SignupDto } from 'src/users/dto/signup.dto';
-import { SigninDto } from 'src/users/dto/signin.dto';
-
 import { AuthGuard } from '@nestjs/passport';
-import { ConfirmPasswordResetDto } from './dto/confirmPasswordReset.dto';
 import { SendPasswordResetEmailDto } from './dto/sendPasswordResetEmail.dto';
+import { ApiBearerAuth, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { SignupDto } from './dto/signup.dto';
+import { SigninDto } from './dto/signin.dto';
 
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -23,18 +23,19 @@ export class AuthController {
     return this.authService.signin(signin);
   }
 
+  @ApiBearerAuth()
+  @ApiResponse({ status: 200, description: 'OK' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @HttpCode(HttpStatus.OK)
-  @Get('sendPasswordResetEmail')
+  @UseGuards(AuthGuard('jwt'))
+  @Post('sendPasswordResetEmail')
   public async sendPasswordResetEmail(@Body() sendPasswordResetEmailDto: SendPasswordResetEmailDto): Promise<any> {
     return this.authService.sendPasswordResetEmail(sendPasswordResetEmailDto);
   }
 
-  @HttpCode(HttpStatus.OK)
-  @Post('confirmPasswordReset')
-  public async confirmPasswordReset(@Body() confirmPasswordResetDto: ConfirmPasswordResetDto): Promise<any> {
-    return this.authService.confirmPasswordReset(confirmPasswordResetDto);
-  }
-
+  @ApiBearerAuth()
+  @ApiResponse({ status: 200, description: 'OK' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @UseGuards(AuthGuard('jwt'))
   @HttpCode(HttpStatus.OK)
   @Get('sendEmailVerification')

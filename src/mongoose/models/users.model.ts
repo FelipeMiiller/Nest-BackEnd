@@ -4,4 +4,5 @@ export interface UserModel extends Document {
   uidAuth?: string;
   name: string;
   email: string;
+  status: boolean;
 }

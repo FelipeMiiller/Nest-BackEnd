@@ -1,77 +1,78 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { sign } from 'jsonwebtoken';
 import { Request } from 'express';
 import { JwtPayload } from './models/jwt-payload.model';
-import { UserDBService } from 'src/db/user/userDB.service';
-import { UserModel } from 'src/db/models/users.model';
-import { SigninDto } from 'src/users/dto/signin.dto';
 import { AuthenticateService } from 'src/firebase/authenticate/authenticate.service';
-import { SignupDto } from 'src/users/dto/signup.dto';
 import { ConfirmPasswordResetDto } from './dto/confirmPasswordReset.dto';
 import { SendPasswordResetEmailDto } from './dto/sendPasswordResetEmail.dto';
+import { SignupDto } from './dto/signup.dto';
+import { SigninDto } from './dto/signin.dto';
+import { UserService } from 'src/mongoose/services/user/user.service';
+import { BusinessService as BusinessDB } from 'src/mongoose/services/business/business.service';
+import { PermissionService as PermissionDB } from 'src/mongoose/services/permission/permission.service';
+import { UserModel } from 'src/mongoose/models/users.model';
+import { UserAuthDto } from './dto/userAuth.dto';
+import console from 'console';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly acessDBUser: UserDBService, private readonly firebaseAuth: AuthenticateService) {}
+  constructor(
+    private readonly firebaseAuth: AuthenticateService,
+    private readonly userDB: UserService,
+    private readonly bussinessDB: BusinessDB,
+    private readonly permissionDB: PermissionDB,
+  ) {}
 
   public async signup(signupDto: SignupDto): Promise<any> {
-    const data = new Date();
-    data.setSeconds(data.getSeconds() + +process.env.JWT_EXPIRATION);
-    const createUserEmail = await this.firebaseAuth.createUserEmail(signupDto);
-
-    if (!createUserEmail.data?.user.uid) {
-      throw new BadRequestException(createUserEmail.error);
-    } else {
-      const user = await this.acessDBUser.created({
-        email: signupDto.email,
-        name: signupDto.name,
-        uidAuth: createUserEmail.data.user.uid,
+    try {
+      const user = await this.createUserAuth(signupDto);
+      const business = await this.bussinessDB.created({
+        document: signupDto.businessDocument,
+        name: signupDto.businessName,
+        status: true,
       });
 
-      if (!user) {
-        throw new NotFoundException('User not found');
-      } else {
-        const jwtToken = await this.createAccessToken(user._id);
-        return {
-          id: user._id,
-          uidAuth: user.uidAuth,
-          name: user.name,
-          email: user.email,
-          token: jwtToken,
-          expire: data,
-          emailVerified: createUserEmail.data.user.emailVerified,
-        };
+      const permission = await this.permissionDB.created({
+        user: user._id,
+        business: business._id,
+        status: true,
+        type: 'admin',
+      });
+      if (permission) {
+        return permission;
       }
+    } catch (e) {
+      console.log(e);
+      throw new BadRequestException(e.message);
     }
   }
 
   public async signin(signinDto: SigninDto): Promise<any> {
-    const data = new Date();
-    data.setSeconds(data.getSeconds() + +process.env.JWT_EXPIRATION);
-    const verificPass = await this.firebaseAuth.verificationPassword(signinDto);
+    try {
+      const data = new Date();
+      data.setSeconds(data.getSeconds() + +process.env.JWT_EXPIRATION);
 
-    if (!verificPass.data?.user.uid) {
-      throw new BadRequestException(verificPass.error);
-    } else {
-      const user = await this.acessDBUser.findByEmail(signinDto.email);
+      return this.permissionDB.populateByIdUserEmail(signinDto.email);
+    } catch (e) {
+      throw new BadRequestException(e.message);
+    }
+  }
 
-      if (!user) {
-        throw new NotFoundException('User not found');
-      } else if (verificPass.data.user.uid === user.uidAuth) {
-        const jwtToken = await this.createAccessToken(user._id);
-        return {
-          id: user._id,
-          uidAuth: user.uidAuth,
-          name: user.name,
-          email: user.email,
-          token: jwtToken,
-          expire: data,
-          emailVerified: verificPass.data.user.emailVerified,
-        };
-      } else {
-        throw new BadRequestException('uid divergence');
-      }
+  private async createUserAuth(userAuthDto: UserAuthDto): Promise<any> {
+    try {
+      const data = new Date();
+      data.setSeconds(data.getSeconds() + +process.env.JWT_EXPIRATION);
+      const authCreated = await this.firebaseAuth.createEmail(userAuthDto);
+      const userCreate = await this.userDB.created({
+        email: userAuthDto.email,
+        name: userAuthDto.name,
+        uidAuth: authCreated.user.uid,
+        status: true,
+      });
+
+      return userCreate;
+    } catch (e) {
+      throw new Error(e);
     }
   }
 
@@ -97,7 +98,7 @@ export class AuthService {
   }
 
   public async validateUser(jwtPayload: JwtPayload): Promise<UserModel> {
-    return this.acessDBUser.findID(jwtPayload.userId);
+    return this.userDB.findID(jwtPayload.userId);
   }
 
   private static jwtExtractor(request: Request): string {

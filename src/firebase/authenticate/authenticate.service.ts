@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { FirebaseService } from '../firebase.service';
-import { SignupDto } from 'src/users/dto/signup.dto';
 import {
   getAuth,
   createUserWithEmailAndPassword,
@@ -12,8 +11,9 @@ import {
   applyActionCode,
   Auth,
 } from 'firebase/auth';
-import { AuthRespDto } from '../dto/authResp.dto';
+import { AuthUserRespDto } from '../dto/authResp.dto';
 import { EmailPassDto } from '../dto/emailPassword.dto';
+import { UserAuthDto } from 'src/auth/dto/userAuth.dto';
 
 @Injectable()
 export class AuthenticateService {
@@ -21,30 +21,35 @@ export class AuthenticateService {
 
   auth: Auth = getAuth(this.firebaseService.appFireBase);
 
-  public async createUserEmail(signupDto: SignupDto): Promise<AuthRespDto> {
-    let data: AuthRespDto;
-
-    await createUserWithEmailAndPassword(this.auth, signupDto.email, signupDto.password)
-      .then((userCredential) => {
-        data = { data: userCredential };
+  public async createEmail(userAuthDto: UserAuthDto): Promise<AuthUserRespDto> {
+    let data: AuthUserRespDto;
+    let error: string;
+    await createUserWithEmailAndPassword(this.auth, userAuthDto.email, userAuthDto.password)
+      .then((userCredential: AuthUserRespDto) => {
         sendEmailVerification(userCredential.user);
+        data = userCredential;
       })
-      .catch((error: { code: string }) => {
-        data = { error: error.code };
+      .catch((e: { code: string }) => {
+        console.log(e.code);
+        error = e.code;
       });
 
-    return data;
+    if (!data) {
+      throw new Error(error);
+    } else {
+      return data;
+    }
   }
 
-  public async verificationPassword(emailPassDto: EmailPassDto): Promise<AuthRespDto> {
-    let data: AuthRespDto;
+  public async verificationPassword(emailPassDto: EmailPassDto): Promise<AuthUserRespDto> {
+    let data: AuthUserRespDto;
 
     await signInWithEmailAndPassword(this.auth, emailPassDto.email, emailPassDto.password)
       .then((userCredential: UserCredential) => {
-        data = { data: userCredential };
+        data = userCredential;
       })
       .catch((error: { code: string }) => {
-        data = { error: error.code };
+        throw new Error(error.code);
       });
 
     return data;

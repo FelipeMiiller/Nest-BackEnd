@@ -42,9 +42,11 @@ export class PermissionService {
         match: { email: { $gte: email } },
       })
       .populate('business');
-    console.log(permissionsUser);
+
+
+     console.log(permissionsUser);
     if (!permissionsUser.length) {
-      throw new Error('Permission not found');
+      throw new Error('Not found Permission');
     } else {
       return permissionsUser;
     }
@@ -58,7 +60,7 @@ export class PermissionService {
         match: { document: { $gte: document } },
       })
       .populate('user');
-    console.log(permissionsUser);
+
     if (!permissionsUser.length) {
       throw new Error('Permission not found');
     } else {

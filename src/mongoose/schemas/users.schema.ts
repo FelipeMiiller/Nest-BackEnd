@@ -13,9 +13,6 @@ export const UsersSchema = new Schema(
     email: {
       type: String,
     },
-    status: {
-      type: Boolean,
-    },
   },
   { timestamps: true },
 );

@@ -1,13 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
-
-export class EmailPassDto {
-  @IsNotEmpty()
-  @IsString()
-  @IsEmail()
+export interface EmailPassDto {
   email: string;
-
-  @IsNotEmpty()
-  @IsString()
-  @MinLength(4)
   password: string;
 }

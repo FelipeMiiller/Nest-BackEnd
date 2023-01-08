@@ -41,7 +41,7 @@ export class AuthenticateService {
     }
   }
 
-  public async verificationPassword(emailPassDto: EmailPassDto): Promise<AuthUserRespDto> {
+  public async verificationPassword(emailPassDto: EmailPassDto): Promise<any> {
     let data: AuthUserRespDto;
 
     await signInWithEmailAndPassword(this.auth, emailPassDto.email, emailPassDto.password)

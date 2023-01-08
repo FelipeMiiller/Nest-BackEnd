@@ -6,13 +6,13 @@ import { AuthenticateService } from 'src/firebase/authenticate/authenticate.serv
 import { ConfirmPasswordResetDto } from './dto/confirmPasswordReset.dto';
 import { SendPasswordResetEmailDto } from './dto/sendPasswordResetEmail.dto';
 import { SignupDto } from './dto/signup.dto';
-import { SigninDto } from './dto/signin.dto';
 import { UserService } from 'src/mongoose/services/user/user.service';
 import { BusinessService as BusinessDB } from 'src/mongoose/services/business/business.service';
 import { PermissionService as PermissionDB } from 'src/mongoose/services/permission/permission.service';
 import { UserModel } from 'src/mongoose/models/users.model';
 import { UserAuthDto } from './dto/userAuth.dto';
 import console from 'console';
+import { EmailPassDto } from 'src/firebase/dto/emailPassword.dto';
 
 @Injectable()
 export class AuthService {
@@ -31,28 +31,43 @@ export class AuthService {
         name: signupDto.businessName,
         status: true,
       });
-
       const permission = await this.permissionDB.created({
         user: user._id,
         business: business._id,
         status: true,
         type: 'admin',
       });
-      if (permission) {
-        return permission;
-      }
+      return permission;
     } catch (e) {
       console.log(e);
       throw new BadRequestException(e.message);
     }
   }
 
-  public async signin(signinDto: SigninDto): Promise<any> {
+  public async signin(emailPassDto: EmailPassDto): Promise<any> {
     try {
-      const data = new Date();
-      data.setSeconds(data.getSeconds() + +process.env.JWT_EXPIRATION);
+      const date = new Date();
+      date.setSeconds(date.getSeconds() + +process.env.JWT_EXPIRATION);
+      await this.firebaseAuth.verificationPassword(emailPassDto);
+      const permissions = await this.permissionDB.populateByIdUserEmail(emailPassDto.email);
 
-      return this.permissionDB.populateByIdUserEmail(signinDto.email);
+      const jwtToken = await this.createAccessToken(permissions[0].user._id);
+      const user = permissions[0].user;
+
+      const data = {
+        user,
+        jwtToken,
+        expire: date,
+        permissions: permissions.map((item) => {
+          if (item.status && item.business.status) {
+            return {
+              type: item.type,
+              businness: item.business,
+            };
+          }
+        }),
+      };
+      return data;
     } catch (e) {
       throw new BadRequestException(e.message);
     }
@@ -67,7 +82,6 @@ export class AuthService {
         email: userAuthDto.email,
         name: userAuthDto.name,
         uidAuth: authCreated.user.uid,
-        status: true,
       });
 
       return userCreate;
